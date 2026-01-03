@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Config</title>
+    <style>
+        /* CSS to be inlined */
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+        .hidden { display: none; }
+        .step { margin-bottom: 20px; border: 1px solid #ccc; padding: 15px; border-radius: 5px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:disabled { background: #ccc; }
+        input, select { padding: 8px; width: 100%; margin-top: 5px; box-sizing: border-box; }
+        label { font-weight: bold; display: block; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Setup Wizard</h1>
+
+    <div id="step-1" class="step">
+        <h2>1. Device Type</h2>
+        <select id="device-type">
+            <option value="camera">Camera</option>
+            <option value="motion">Motion Sensor</option>
+        </select>
+        <button onclick="nextStep(2)">Next</button>
+    </div>
+
+    <div id="step-2" class="step hidden">
+        <h2>2. WiFi Setup</h2>
+        <button onclick="scanWifi()">Scan Networks</button>
+        <div id="wifi-list"></div>
+        <input type="text" id="ssid" placeholder="SSID">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="nextStep(3)">Next</button>
+    </div>
+
+    <!-- Additional steps would go here -->
+
+    <script>
+        // JS to be inlined
+        function nextStep(step) {
+            document.querySelectorAll('.step').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`step-${step}`).classList.remove('hidden');
+        }
+
+        async function scanWifi() {
+            // Mock scan for now
+            const networks = ['HomeWifi', 'GuestWifi', 'NeighborWifi'];
+            const list = document.getElementById('wifi-list');
+            list.innerHTML = networks.map(n => `<div onclick="document.getElementById('ssid').value='${n}'">${n}</div>`).join('');
+        }
+    </script>
+</body>
+</html>
