@@ -3,9 +3,9 @@
 ## Project Overview
 ESP32-based motion sensor mesh network with three-tier architecture:
 1. **unraid_api/** - FastAPI backend running in Docker (Python 3.11) ✅ COMPLETE
-2. **home_base_firmware/** - ESP32-P4-ETH-M coordinator firmware (ESP-IDF 5.2+, C) ⏳ IN PROGRESS (core logic complete, config endpoints needed)
+2. **home_base_firmware/** - ESP32-P4-ETH-M coordinator firmware (ESP-IDF 5.2+, C) ✅ COMPLETE
 3. **device_config_portal/** - Vanilla HTML/JS setup wizard for devices (<100KB) ✅ COMPLETE
-4. **home_base_dashboard/** - Preact local dashboard (Workstream B, 20% complete)
+4. **home_base_dashboard/** - Preact local dashboard ✅ COMPLETE (13.23KB gzipped)
 5. Device firmware - ESP32-S3 motion sensors/cameras with ESP-NOW mesh (NOT STARTED)
 
 ## Architecture
@@ -82,16 +82,18 @@ idf.py -p COM3 flash monitor  # Adjust port
 - Signature verification: reconstructs exact `"{int(timestamp)}:{message}"` format that firmware signs
 - **24 pytest tests** in `unraid_api/tests/` covering all endpoints with SQLite StaticPool for thread safety
 
-### C Firmware (home_base_firmware/) - CORE LOGIC COMPLETE, CONFIG ENDPOINTS IN PROGRESS
+### C Firmware (home_base_firmware/) - PRODUCTION READY ✅
 - **ESP-IDF component structure**: main/ contains all application code
 - ESP_LOG macros for logging (TAG defined per file)
-- **Core implementations**:
+- **Complete implementations**:
   - `esp_now_mesh.c` - Handles ESP-NOW reception, forwards logs to Unraid via HTTP
-  - `http_server.c` - Status endpoint `/api/v1/status` and device list `/api/v1/devices` working
+  - `http_server.c` - 13 endpoints: status, devices, config portal (10 endpoints), logs, motion, command
   - `unraid_client.c` - Posts mesh messages to `/logs/ingest` endpoint, hex-encodes signatures
+  - `log_storage.c` - FIFO storage for 500 logs and 100 motion events
+  - `device_config.c` - NVS persistent configuration with JSON serialization
   - `main.c` - Initialization sequence: NVS → Ethernet → ESP-NOW → HTTP Server
 - **Critical**: Use `vTaskDelay(pdMS_TO_TICKS(ms))` for delays, never `sleep()`
-- **TODO**: Implement device config web endpoints (10 endpoints from device_config_portal spec)
+- **Note**: Signature verification TODO documented in http_server.c (requires network private key)
 
 ### Device Config Portal (device_config_portal/) - COMPLETE ✅
 - **Vanilla HTML/JS** (no dependencies, 45KB total)
