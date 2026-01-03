@@ -1,4 +1,5 @@
-import { FunctionComponent, useState } from 'preact';
+import { FunctionComponent } from 'preact';
+import { useState } from 'preact/hooks';
 import { DeviceLog } from '../hooks/useAPI';
 
 interface LogViewerProps {
