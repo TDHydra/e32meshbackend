@@ -73,5 +73,12 @@ class Firmware(Base):
     path = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class CommandNonce(Base):
+    __tablename__ = "command_nonces"
+    id = Column(Integer, primary_key=True, index=True)
+    nonce = Column(String, unique=True, index=True)
+    timestamp = Column(DateTime, index=True)
+    network_id = Column(Integer, ForeignKey("networks.id"))
+
 def init_db():
     Base.metadata.create_all(bind=engine)

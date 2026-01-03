@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Device Configuration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #3b82f6;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+            --color-bg: #f3f4f6;
+            --color-card: #ffffff;
+            --color-text: #1f2937;
+            --color-text-light: #6b7280;
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--color-primary) 0%, #8b5cf6 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--color-card);
+            border-radius: var(--border-radius);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--color-primary);
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.2);
+            height: 4px;
+            width: 100%;
+        }
+
+        .progress-fill {
+            background: white;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .content {
+            padding: 32px 24px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .step h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: var(--color-text);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--color-text);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .radio-group, .device-type-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .radio-option, .device-type-option {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .radio-input {
+            display: none;
+        }
+
+        .radio-label, .device-type-label {
+            display: block;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: var(--border-radius);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .radio-input:checked + .radio-label,
+        .radio-input:checked + .device-type-label {
+            border-color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .device-type-option {
+            position: relative;
+        }
+
+        .device-type-label {
+            padding: 24px 12px;
+            text-align: center;
+            border: 2px solid #e5e7eb;
+        }
+
+        .device-type-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .status-message.loading {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-message.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-message.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .wifi-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--border-radius);
+        }
+
+        .wifi-item {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .wifi-item:last-child {
+            border-bottom: none;
+        }
+
+        .wifi-item:hover {
+            background: var(--color-bg);
+        }
+
+        .wifi-item.selected {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid var(--color-primary);
+        }
+
+        .wifi-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .wifi-strength {
+            font-size: 12px;
+            color: var(--color-text-light);
+        }
+
+        .strength-bars {
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        .bar {
+            display: inline-block;
+            width: 3px;
+            height: 10px;
+            background: #ddd;
+            margin-right: 2px;
+            vertical-align: middle;
+        }
+
+        .bar.active {
+            background: var(--color-success);
+        }
+
+        .range-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e5e7eb;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            cursor: pointer;
+        }
+
+        .range-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            cursor: pointer;
+            border: none;
+        }
+
+        .range-value {
+            text-align: center;
+            font-weight: 500;
+            color: var(--color-primary);
+            margin-top: 8px;
+        }
+
+        .summary {
+            background: var(--color-bg);
+            padding: 16px;
+            border-radius: var(--border-radius);
+            margin-bottom: 16px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .summary-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .summary-label {
+            font-weight: 500;
+            color: var(--color-text-light);
+        }
+
+        .summary-value {
+            color: var(--color-text);
+        }
+
+        .buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--color-bg);
+            color: var(--color-text);
+            border: 1px solid #e5e7eb;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .error-text {
+            color: var(--color-danger);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .success-screen {
+            text-align: center;
+            padding: 32px 0;
+        }
+
+        .success-screen .icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .success-screen h2 {
+            margin-bottom: 12px;
+        }
+
+        .success-screen p {
+            color: var(--color-text-light);
+            margin-bottom: 24px;
+        }
+
+        .spinner {
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid var(--color-primary);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .content {
+                padding: 24px 16px;
+            }
+
+            .header {
+                padding: 16px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            button {
+                padding: 10px 14px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ Device Setup</h1>
+            <p id="step-indicator">Step 1 of 5</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Step 1: Device Type -->
+            <div class="step active" id="step-1">
+                <h2>Select Device Type</h2>
+                <div class="device-type-group">
+                    <label class="device-type-option">
+                        <input type="radio" name="device-type" value="motion" class="radio-input" checked>
+                        <div class="device-type-label">
+                            <div class="device-type-icon">📡</div>
+                            <div>Motion Sensor</div>
+                        </div>
+                    </label>
+                    <label class="device-type-option">
+                        <input type="radio" name="device-type" value="camera" class="radio-input">
+                        <div class="device-type-label">
+                            <div class="device-type-icon">📷</div>
+                            <div>Camera</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Step 2: WiFi Setup -->
+            <div class="step" id="step-2">
+                <h2>WiFi Configuration</h2>
+                <div class="form-group">
+                    <label for="wifi-scan">Available Networks:</label>
+                    <button class="btn-primary" id="wifi-scan-btn" style="width: 100%; flex: none; margin-bottom: 12px;">🔍 Scan Networks</button>
+                    <div class="status-message" id="scan-status" style="display: none;"></div>
+                    <div class="wifi-list" id="wifi-list"></div>
+                </div>
+                <div class="form-group">
+                    <label for="wifi-ssid">Network Name (SSID):</label>
+                    <input type="text" id="wifi-ssid" placeholder="Selected network will appear here" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="wifi-password">Password:</label>
+                    <input type="password" id="wifi-password" placeholder="Enter WiFi password">
+                </div>
+            </div>
+
+            <!-- Step 3: Network Registration -->
+            <div class="step" id="step-3">
+                <h2>Network Registration</h2>
+                <p style="color: var(--color-text-light); font-size: 14px; margin-bottom: 16px;">
+                    Enter the details from your Unraid Central dashboard
+                </p>
+                <div class="form-group">
+                    <label for="network-id">Network ID:</label>
+                    <input type="number" id="network-id" placeholder="e.g., 1" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="device-id">Device ID:</label>
+                    <input type="text" id="device-id" placeholder="ESP32-ABC123">
+                </div>
+                <div class="form-group">
+                    <label for="private-key">Private Key (from dashboard):</label>
+                    <textarea id="private-key" placeholder="Paste hex private key here" rows="4" style="font-family: monospace; font-size: 12px;"></textarea>
+                </div>
+            </div>
+
+            <!-- Step 4: Sensor Configuration -->
+            <div class="step" id="step-4">
+                <h2>Sensor Configuration</h2>
+                <div class="form-group" id="sensor-config-motion">
+                    <label for="pir-gpio">PIR Sensor GPIO Pin:</label>
+                    <input type="number" id="pir-gpio" placeholder="e.g., 39" min="0" max="50" value="39">
+                </div>
+                <div class="form-group" id="sensor-config-motion">
+                    <label for="pir-sensitivity">Motion Sensitivity:</label>
+                    <input type="range" id="pir-sensitivity" class="range-slider" min="1" max="10" value="5">
+                    <div class="range-value"><span id="sensitivity-value">5</span>/10</div>
+                </div>
+                <div class="form-group" id="sensor-config-motion">
+                    <label for="pir-cooldown">Motion Cooldown (seconds):</label>
+                    <input type="number" id="pir-cooldown" placeholder="e.g., 30" min="5" max="300" value="30">
+                </div>
+                <div class="form-group">
+                    <label for="led-gpio">LED GPIO Pin (optional):</label>
+                    <input type="number" id="led-gpio" placeholder="e.g., 48" min="0" max="50" value="48">
+                </div>
+                <div class="form-group">
+                    <label for="led-brightness">LED Brightness:</label>
+                    <input type="range" id="led-brightness" class="range-slider" min="0" max="100" value="80">
+                    <div class="range-value"><span id="brightness-value">80</span>%</div>
+                </div>
+            </div>
+
+            <!-- Step 5: Review & Save -->
+            <div class="step" id="step-5">
+                <h2>Review Configuration</h2>
+                <div class="summary" id="config-summary"></div>
+                <div class="status-message" id="save-status" style="display: none;"></div>
+            </div>
+
+            <!-- Success Screen -->
+            <div class="step" id="step-success" style="display: none;">
+                <div class="success-screen">
+                    <div class="icon">✅</div>
+                    <h2>Device Configured!</h2>
+                    <p>Your device has been configured and will reboot in a few seconds.</p>
+                    <p style="font-size: 12px; color: var(--color-text-light);">
+                        You can now connect to your WiFi network and access the device through your home network.
+                    </p>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary" id="btn-prev">← Back</button>
+                <button class="btn-primary" id="btn-next">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const config = {
+            deviceType: 'motion',
+            wifiSsid: '',
+            wifiPassword: '',
+            networkId: '',
+            deviceId: '',
+            privateKey: '',
+            pirGpio: 39,
+            pirSensitivity: 5,
+            pirCooldown: 30,
+            ledGpio: 48,
+            ledBrightness: 80
+        };
+
+        let currentStep = 1;
+        const totalSteps = 5;
+
+        // UI Elements
+        const stepIndicator = document.getElementById('step-indicator');
+        const progressFill = document.getElementById('progress-fill');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const wifiScanBtn = document.getElementById('wifi-scan-btn');
+
+        // Form inputs
+        const deviceTypeRadios = document.querySelectorAll('input[name="device-type"]');
+        const wifiSsidInput = document.getElementById('wifi-ssid');
+        const wifiPasswordInput = document.getElementById('wifi-password');
+        const networkIdInput = document.getElementById('network-id');
+        const deviceIdInput = document.getElementById('device-id');
+        const privateKeyInput = document.getElementById('private-key');
+        const pirGpioInput = document.getElementById('pir-gpio');
+        const pirSensitivityInput = document.getElementById('pir-sensitivity');
+        const pirCooldownInput = document.getElementById('pir-cooldown');
+        const ledGpioInput = document.getElementById('led-gpio');
+        const ledBrightnessInput = document.getElementById('led-brightness');
+
+        // Event listeners
+        deviceTypeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                config.deviceType = e.target.value;
+                updateSensorConfigVisibility();
+            });
+        });
+
+        wifiScanBtn.addEventListener('click', scanWiFiNetworks);
+        pirSensitivityInput.addEventListener('input', (e) => {
+            document.getElementById('sensitivity-value').textContent = e.target.value;
+            config.pirSensitivity = parseInt(e.target.value);
+        });
+        ledBrightnessInput.addEventListener('input', (e) => {
+            document.getElementById('brightness-value').textContent = e.target.value;
+            config.ledBrightness = parseInt(e.target.value);
+        });
+
+        btnPrev.addEventListener('click', previousStep);
+        btnNext.addEventListener('click', nextStep);
+
+        function updateStep() {
+            // Hide all steps
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+            
+            // Show current step
+            const currentStepElement = document.getElementById(`step-${currentStep}`);
+            if (currentStepElement) {
+                currentStepElement.classList.add('active');
+            }
+
+            // Update progress
+            const progressPercent = (currentStep / totalSteps) * 100;
+            progressFill.style.width = progressPercent + '%';
+            stepIndicator.textContent = `Step ${currentStep} of ${totalSteps}`;
+
+            // Update button states
+            btnPrev.style.display = currentStep === 1 ? 'none' : 'block';
+            
+            if (currentStep === totalSteps) {
+                btnNext.textContent = 'Save & Reboot';
+            } else if (currentStep === 6) {
+                btnNext.textContent = 'Done';
+                btnNext.disabled = true;
+            } else {
+                btnNext.textContent = 'Next →';
+            }
+
+            window.scrollTo(0, 0);
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                saveStepData();
+                updateStep();
+            }
+        }
+
+        async function nextStep() {
+            if (!validateStep(currentStep)) {
+                return;
+            }
+
+            saveStepData();
+
+            if (currentStep === totalSteps) {
+                await saveConfiguration();
+            } else if (currentStep < totalSteps) {
+                currentStep++;
+                updateStep();
+            }
+        }
+
+        function validateStep(step) {
+            switch(step) {
+                case 2:
+                    if (!wifiSsidInput.value) {
+                        showError('Please select a WiFi network');
+                        return false;
+                    }
+                    if (!wifiPasswordInput.value) {
+                        showError('Please enter WiFi password');
+                        return false;
+                    }
+                    return true;
+                case 3:
+                    if (!networkIdInput.value) {
+                        showError('Please enter Network ID');
+                        return false;
+                    }
+                    if (!deviceIdInput.value) {
+                        showError('Please enter Device ID');
+                        return false;
+                    }
+                    if (!privateKeyInput.value) {
+                        showError('Please enter Private Key');
+                        return false;
+                    }
+                    return true;
+                case 4:
+                    if (!pirGpioInput.value) {
+                        showError('Please enter PIR GPIO pin');
+                        return false;
+                    }
+                    return true;
+                default:
+                    return true;
+            }
+        }
+
+        function saveStepData() {
+            config.deviceType = document.querySelector('input[name="device-type"]:checked').value;
+            config.wifiSsid = wifiSsidInput.value;
+            config.wifiPassword = wifiPasswordInput.value;
+            config.networkId = networkIdInput.value;
+            config.deviceId = deviceIdInput.value;
+            config.privateKey = privateKeyInput.value;
+            config.pirGpio = parseInt(pirGpioInput.value) || 39;
+            config.pirSensitivity = parseInt(pirSensitivityInput.value) || 5;
+            config.pirCooldown = parseInt(pirCooldownInput.value) || 30;
+            config.ledGpio = parseInt(ledGpioInput.value) || 48;
+            config.ledBrightness = parseInt(ledBrightnessInput.value) || 80;
+        }
+
+        async function scanWiFiNetworks() {
+            const wifiList = document.getElementById('wifi-list');
+            const scanStatus = document.getElementById('scan-status');
+            
+            wifiScanBtn.disabled = true;
+            wifiScanBtn.innerHTML = '<div class="spinner"></div>';
+            scanStatus.style.display = 'block';
+            scanStatus.className = 'status-message loading';
+            scanStatus.textContent = 'Scanning for networks...';
+
+            try {
+                const response = await fetch('/api/wifi/scan');
+                if (!response.ok) throw new Error('Failed to scan networks');
+                
+                const networks = await response.json();
+                wifiList.innerHTML = '';
+
+                networks.forEach(network => {
+                    const item = document.createElement('div');
+                    item.className = 'wifi-item';
+                    
+                    const signalStrength = Math.max(0, Math.min(4, Math.ceil((network.rssi + 100) / 25)));
+                    let bars = '';
+                    for (let i = 0; i < 4; i++) {
+                        bars += `<span class="bar ${i < signalStrength ? 'active' : ''}"></span>`;
+                    }
+
+                    item.innerHTML = `
+                        <div class="wifi-name">${network.ssid || 'Hidden Network'}</div>
+                        <div class="wifi-strength">${network.rssi} dBm ${bars}</div>
+                    `;
+                    
+                    item.addEventListener('click', () => {
+                        document.querySelectorAll('.wifi-item').forEach(i => i.classList.remove('selected'));
+                        item.classList.add('selected');
+                        wifiSsidInput.value = network.ssid || 'Hidden Network';
+                    });
+
+                    wifiList.appendChild(item);
+                });
+
+                scanStatus.className = 'status-message success';
+                scanStatus.textContent = `Found ${networks.length} network(s)`;
+            } catch (error) {
+                scanStatus.className = 'status-message error';
+                scanStatus.textContent = `Error: ${error.message}`;
+            } finally {
+                wifiScanBtn.disabled = false;
+                wifiScanBtn.textContent = '🔍 Scan Networks';
+            }
+        }
+
+        function updateSensorConfigVisibility() {
+            const motionConfigs = document.querySelectorAll('#sensor-config-motion');
+            motionConfigs.forEach(el => {
+                el.style.display = config.deviceType === 'motion' ? 'block' : 'none';
+            });
+        }
+
+        function generateSummary() {
+            const summary = document.getElementById('config-summary');
+            summary.innerHTML = `
+                <div class="summary-item">
+                    <span class="summary-label">Device Type:</span>
+                    <span class="summary-value">${config.deviceType === 'motion' ? 'Motion Sensor' : 'Camera'}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">WiFi Network:</span>
+                    <span class="summary-value">${config.wifiSsid}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Device ID:</span>
+                    <span class="summary-value">${config.deviceId}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Network ID:</span>
+                    <span class="summary-value">${config.networkId}</span>
+                </div>
+                ${config.deviceType === 'motion' ? `
+                    <div class="summary-item">
+                        <span class="summary-label">PIR Sensitivity:</span>
+                        <span class="summary-value">${config.pirSensitivity}/10</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Motion Cooldown:</span>
+                        <span class="summary-value">${config.pirCooldown}s</span>
+                    </div>
+                ` : ''}
+                <div class="summary-item">
+                    <span class="summary-label">LED Brightness:</span>
+                    <span class="summary-value">${config.ledBrightness}%</span>
+                </div>
+            `;
+        }
+
+        async function saveConfiguration() {
+            saveStepData();
+            generateSummary();
+
+            const saveStatus = document.getElementById('save-status');
+            const btnNext = document.getElementById('btn-next');
+            
+            saveStatus.style.display = 'block';
+            saveStatus.className = 'status-message loading';
+            saveStatus.textContent = 'Saving configuration...';
+            btnNext.disabled = true;
+
+            try {
+                const payload = {
+                    device_id: config.deviceId,
+                    network_id: parseInt(config.networkId),
+                    type: config.deviceType,
+                    private_key: config.privateKey,
+                    pir_gpio: config.pirGpio,
+                    pir_sensitivity: config.pirSensitivity,
+                    pir_cooldown_ms: config.pirCooldown * 1000,
+                    led_gpio: config.ledGpio,
+                    led_brightness: config.ledBrightness,
+                    board_variant: 'esp32s3_devkitm'
+                };
+
+                const response = await fetch('/api/config/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('Failed to save configuration');
+
+                saveStatus.className = 'status-message success';
+                saveStatus.textContent = 'Configuration saved! Rebooting device...';
+
+                setTimeout(() => {
+                    currentStep = 6;
+                    updateStep();
+                    document.getElementById('step-success').classList.add('active');
+                    
+                    // Trigger reboot
+                    fetch('/api/reboot', { method: 'POST' }).catch(() => {});
+                }, 1500);
+            } catch (error) {
+                saveStatus.className = 'status-message error';
+                saveStatus.textContent = `Error: ${error.message}`;
+                btnNext.disabled = false;
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'status-message error';
+            errorDiv.textContent = message;
+            document.querySelector('.content').insertBefore(errorDiv, document.querySelector('.buttons'));
+            setTimeout(() => errorDiv.remove(), 4000);
+        }
+
+        // Initialize
+        updateSensorConfigVisibility();
+        updateStep();
+    </script>
+</body>
+</html>

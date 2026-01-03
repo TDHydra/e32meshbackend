@@ -48,3 +48,61 @@ def decode_access_token(token: str):
         return payload
     except JWTError:
         return None
+
+def validate_command_nonce(db, network_id: int, nonce: str, timestamp: datetime) -> tuple[bool, Optional[str]]:
+    """
+    Validates command nonce to prevent replay attacks.
+
+    Args:
+        db: Database session
+        network_id: Network ID for the command
+        nonce: Unique nonce value
+        timestamp: Command timestamp
+
+    Returns:
+        (is_valid, error_message) tuple
+        - (True, None) if nonce is valid
+        - (False, error_message) if nonce is invalid/reused or timestamp is stale
+    """
+    from models import CommandNonce
+
+    # Check timestamp is within 5-minute window
+    now = datetime.utcnow()
+    time_diff = abs((now - timestamp).total_seconds())
+
+    if time_diff > 300:  # 5 minutes
+        return False, f"Command timestamp is stale (>5 minutes old)"
+
+    # Check if nonce already exists (replay attack)
+    existing_nonce = db.query(CommandNonce).filter(CommandNonce.nonce == nonce).first()
+    if existing_nonce:
+        return False, "Nonce has already been used (replay attack detected)"
+
+    # Store nonce in database
+    try:
+        new_nonce = CommandNonce(
+            nonce=nonce,
+            timestamp=timestamp,
+            network_id=network_id
+        )
+        db.add(new_nonce)
+        db.commit()
+        return True, None
+    except Exception as e:
+        db.rollback()
+        return False, f"Failed to store nonce: {str(e)}"
+
+def cleanup_old_nonces(db, max_age_minutes: int = 10):
+    """
+    Cleanup old nonces to prevent database bloat.
+    Should be called periodically by background task.
+
+    Args:
+        db: Database session
+        max_age_minutes: Delete nonces older than this many minutes
+    """
+    from models import CommandNonce
+
+    cutoff_time = datetime.utcnow() - timedelta(minutes=max_age_minutes)
+    db.query(CommandNonce).filter(CommandNonce.timestamp < cutoff_time).delete()
+    db.commit()

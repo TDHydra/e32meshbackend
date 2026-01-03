@@ -1,0 +1,103 @@
+menu "ESP32-C6 Motion Sensor Configuration"
+
+    config MOTION_SENSOR_GPIO
+        int "Motion Sensor GPIO Pin"
+        default 4
+        range 0 48
+        help
+            GPIO pin number for motion sensor input (typically PIR sensor).
+            Default: GPIO 4 (suitable for ESP32-C6)
+
+    config MOTION_SENSOR_SENSITIVITY
+        int "Motion Sensor Sensitivity (1-10)"
+        default 5
+        range 1 10
+        help
+            Sensitivity level for motion detection.
+            1 = least sensitive, 10 = most sensitive
+            Default: 5 (medium)
+
+    config MOTION_COOLDOWN_MS
+        int "Motion Cooldown Period (ms)"
+        default 30000
+        range 5000 300000
+        help
+            Minimum time between motion events (prevents false triggers).
+            Minimum: 5000ms (5 seconds)
+            Maximum: 300000ms (5 minutes)
+            Default: 30000ms (30 seconds)
+
+    config DISPLAY_ENABLED
+        bool "Enable TFT Display"
+        default y
+        help
+            Enable ST7789 TFT display for motion status visualization.
+
+    config DISPLAY_WIDTH
+        int "Display Width (pixels)"
+        default 240
+        depends on DISPLAY_ENABLED
+
+    config DISPLAY_HEIGHT
+        int "Display Height (pixels)"
+        default 320
+        depends on DISPLAY_ENABLED
+
+    config DISPLAY_SPI_SCLK_GPIO
+        int "Display SPI SCLK GPIO"
+        default 6
+        depends on DISPLAY_ENABLED
+        help
+            GPIO pin for SPI clock line.
+
+    config DISPLAY_SPI_MOSI_GPIO
+        int "Display SPI MOSI GPIO"
+        default 7
+        depends on DISPLAY_ENABLED
+        help
+            GPIO pin for SPI MOSI (Master Out, Slave In) line.
+
+    config DISPLAY_SPI_MISO_GPIO
+        int "Display SPI MISO GPIO"
+        default 5
+        depends on DISPLAY_ENABLED
+        help
+            GPIO pin for SPI MISO (Master In, Slave Out) line.
+
+    config DISPLAY_SPI_CS_GPIO
+        int "Display SPI Chip Select GPIO"
+        default 8
+        depends on DISPLAY_ENABLED
+        help
+            GPIO pin for SPI chip select.
+
+    config DISPLAY_DC_GPIO
+        int "Display Data/Command GPIO"
+        default 9
+        depends on DISPLAY_ENABLED
+        help
+            GPIO pin for Data/Command control line.
+
+    config DISPLAY_RESET_GPIO
+        int "Display Reset GPIO"
+        default 10
+        depends on DISPLAY_ENABLED
+        help
+            GPIO pin for display reset control.
+
+    config DISPLAY_BACKLIGHT_GPIO
+        int "Display Backlight GPIO"
+        default 11
+        depends on DISPLAY_ENABLED
+        help
+            GPIO pin for backlight control.
+
+    config DISPLAY_BRIGHTNESS
+        int "Display Brightness (0-100%)"
+        default 100
+        range 0 100
+        depends on DISPLAY_ENABLED
+        help
+            Default display brightness level.
+
+endmenu

@@ -6,4 +6,30 @@ menu "Home Base Configuration"
         help
             The full URL for the log ingestion endpoint on the Unraid server.
 
+    config ETHERNET_PHY_ADDRESS
+        int "Ethernet PHY Address"
+        default 1
+        help
+            Ethernet PHY address on the MDIO bus.
+            IP101 typically uses address 1.
+
+    config ESP_NOW_CHANNEL
+        int "ESP-NOW Channel"
+        default 1
+        range 1 13
+        help
+            WiFi channel for ESP-NOW mesh communication.
+
+    config HTTP_SERVER_PORT
+        int "HTTP Server Port"
+        default 80
+        help
+            Port for the HTTP server serving device config portal and API endpoints.
+
+    config DEVICE_CONFIG_PORTAL_ENABLED
+        bool "Enable Device Config Portal"
+        default y
+        help
+            Enable serving device config portal on unconfigured devices at http://192.168.4.1
+
 endmenu

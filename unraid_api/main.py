@@ -5,11 +5,13 @@ from pydantic import BaseModel
 from datetime import datetime
 import models
 import security
+import middleware
 from models import SessionLocal, init_db
 import os
 import json
 import nacl.encoding
 import nacl.signing
+import secrets
 
 # --- Pydantic Models ---
 class NetworkCreate(BaseModel):
@@ -72,8 +74,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/networks")
-def create_network(network: NetworkCreate, db: Session = Depends(get_db)):
-    # In a real app, require auth here
+def create_network(network: NetworkCreate, db: Session = Depends(get_db), current_user: str = Depends(middleware.get_current_user)):
     db_network = models.Network(name=network.name)
     # Generate keys for the network
     signing_key = security.nacl.signing.SigningKey.generate()
@@ -90,7 +91,7 @@ def list_networks(db: Session = Depends(get_db)):
     return db.query(models.Network).all()
 
 @app.post("/networks/{network_id}/devices")
-def register_device(network_id: int, device: DeviceCreate, db: Session = Depends(get_db)):
+def register_device(network_id: int, device: DeviceCreate, db: Session = Depends(get_db), current_user: str = Depends(middleware.get_current_user)):
     db_device = models.Device(
         device_id=device.device_id,
         network_id=network_id,
@@ -152,7 +153,7 @@ def get_logs(device_id: Optional[str] = None, limit: int = 100, db: Session = De
     return query.order_by(models.DeviceLog.timestamp.desc()).limit(limit).all()
 
 @app.post("/networks/{network_id}/command")
-def send_command(network_id: int, cmd: CommandRequest, db: Session = Depends(get_db)):
+def send_command(network_id: int, cmd: CommandRequest, db: Session = Depends(get_db), current_user: str = Depends(middleware.get_current_user)):
     network = db.query(models.Network).filter(models.Network.id == network_id).first()
     if not network:
         raise HTTPException(status_code=404, detail="Network not found")
@@ -163,21 +164,31 @@ def send_command(network_id: int, cmd: CommandRequest, db: Session = Depends(get
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Key error: {e}")
 
-    # 2. Sign command payload
-    # Format: "{timestamp}:{command}:{json_payload}"
+    # 2. Generate nonce and timestamp
     timestamp = int(datetime.utcnow().timestamp())
+    nonce = secrets.token_hex(16)  # 32 character hex string
+
+    # 3. Validate and store nonce
+    timestamp_dt = datetime.utcfromtimestamp(timestamp)
+    is_valid, error_msg = security.validate_command_nonce(db, network_id, nonce, timestamp_dt)
+    if not is_valid:
+        raise HTTPException(status_code=403, detail=error_msg)
+
+    # 4. Sign command payload with nonce
+    # Format: "{timestamp}:{nonce}:{command}:{json_payload}"
     payload_str = json.dumps(cmd.payload)
-    message_to_sign = f"{timestamp}:{cmd.command}:{payload_str}".encode('utf-8')
+    message_to_sign = f"{timestamp}:{nonce}:{cmd.command}:{payload_str}".encode('utf-8')
 
     signed = signing_key.sign(message_to_sign)
     signature_hex = signed.signature.hex()
 
-    # 3. Return the signed command bundle (in real system, push to WS)
+    # 5. Return the signed command bundle (in real system, push to WS)
     return {
         "status": "command_queued",
         "command_bundle": {
             "network_id": network_id,
             "timestamp": timestamp,
+            "nonce": nonce,
             "command": cmd.command,
             "payload": cmd.payload,
             "signature": signature_hex
